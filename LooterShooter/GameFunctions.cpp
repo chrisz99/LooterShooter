@@ -69,8 +69,11 @@ namespace GameFunctions {
 
 				//Equip Primary Weapon
 				newPlayer.equipPrimaryWeapon(&starterWeapon);
-
+				
+				//Save Player Data
 				GameFunctions::savePlayerData(&newPlayer);
+
+				//Create and Return new player object
 				std::cout << "New player " << newPlayer.getPlayerName() << " successfully created!\n"
 					<< newPlayer << "\n" << *newPlayer.getPrimaryWeapon() << std::endl;
 				return newPlayer;
