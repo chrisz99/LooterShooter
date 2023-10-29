@@ -3,8 +3,25 @@
 #include <string>
 #include "Player.h"
 #include <nlohmann/json.hpp>
+#include <Windows.h>
+
 
 namespace GameFunctions {
+
+	CONST int DEFAULT_COLOR = FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+
+	//Main Game Functions
+	// 
+		//Starting Loop of Game -> Users Create a Character / Select a Character
+		Player gameStart();
+		//Main Loop of Game
+		bool gameLoop(Player* selectedPlayer);
+
+
+
+	
+	//Utility Functions
+	std::string colorPrint(const char* format, int color, ...);
 
 	//RNG Functions
 	int rngInt(int min, int max);
@@ -24,8 +41,11 @@ namespace GameFunctions {
 	nlohmann::json weaponToJson(Weapon* weapon);
 	std::vector<Player> loadPlayers();
 
-	//Starting Loop of Game -> Users Create a Character / Select a Character
-	Player gameStart();
+
+
+	Player createCharacterHelper();
+
+
 
 
 }

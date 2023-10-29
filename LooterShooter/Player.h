@@ -1,10 +1,17 @@
 #pragma once
 #include <string>
 #include <iostream>
+#include <vector>
 
 class Weapon;
 
 class Player {
+
+public: 
+	struct Inventory {
+		std::vector<Weapon> weaponInventory;
+
+	};
 
 private:
 	std::string name;
@@ -15,6 +22,7 @@ private:
 	double dps;
 	double armour;
 	Weapon* primaryWeapon;
+	Inventory playerInventory;
 
 
 public:
@@ -36,6 +44,8 @@ public:
 
 	//Refresh Player Equipment so Player Stats can Update
 	void refreshPlayerEquipment();
+
+	void managePlayerInventory();
 
 
 	//Setters and Getters
@@ -61,6 +71,13 @@ public:
 
 	double getPlayerArmour();
 	void setPlayerArmour(double armour);
+
+	Inventory* getPlayerInventory();
+	void setPlayerInventory(Inventory* inventory);
+
+	int getNumOfItemsInInventory();
+
+	std::string toString();
 
 
 	

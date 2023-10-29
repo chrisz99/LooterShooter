@@ -1,13 +1,68 @@
 #include <random>
-#include "GameFunctions.h"
 #include <cmath>
 #include <windows.h>
 #include <shlobj.h>
 #include <iostream>
 #include <codecvt>
 #include <fstream> // Include the necessary header for file operations
+#include <sstream>
+#include <iomanip>
+#include <string>
+#include "GameFunctions.h"
+
 
 namespace GameFunctions {
+
+
+
+	Player GameFunctions::createCharacterHelper() {
+		//Init Player Vars
+		bool creatingCharacter = true;
+		std::string playerName;
+		Weapon::WeaponType weaponType;
+
+		while (creatingCharacter) {
+			system("cls");
+			std::cout << "What's your characters name?" << std::endl;
+			std::cin.ignore(); 
+			std::getline(std::cin, playerName);
+			std::cout << "What type of weapon do you wish to start out with?" << std::endl <<
+				std::endl << "1.) Assault Rifle\n" << "2.) Sniper\n" << "3.) Pistol\n" << "4.) Melee\n" << "5.) SMG" << std::endl;
+			int weaponIndex;
+			if (std::cin >> weaponIndex) {
+				if (weaponIndex > 0 && weaponIndex <= 5) {
+					weaponType = static_cast<Weapon::WeaponType>(weaponIndex - 1);
+					creatingCharacter = false;
+				}
+				else {
+					std::cerr << "Invalid weapon type selected, try again" << std::endl;
+					system("pause");
+				}
+			}
+
+
+		}
+
+		//Create Player Object
+		Player newPlayer(playerName, 100, 0, 1, 8, 0, 0);
+
+		//Create Weapon Object
+		Weapon starterWeapon = Weapon::createWeapon(newPlayer, weaponType, false);
+
+		//Equip Primary Weapon
+		newPlayer.equipPrimaryWeapon(&starterWeapon);
+
+		//Save Player Data
+		GameFunctions::savePlayerData(&newPlayer);
+
+		//Create and Return new player object
+		std::cout << "New player " << newPlayer.getPlayerName() << " successfully created!\n"
+			<< newPlayer << "\n" << *newPlayer.getPrimaryWeapon() << std::endl;
+		return newPlayer;
+
+	
+	}
+
 
 	Player GameFunctions::gameStart() {
 
@@ -28,57 +83,24 @@ namespace GameFunctions {
 				std::cout << "Select a Character Survivor!" << std::endl << std::endl;
 				for (int i = 0; i < playerList.size(); i++)
 					std::cout << i << ".) " << playerList[i] << std::endl << std::endl;
-
+				std::cout << playerList.size() << ".)" << " Create a character." << std::endl;
 				int selectedIndex;
 				if (std::cin >> selectedIndex) {
-					if (selectedIndex < 0 || playerList.size() > selectedIndex) {
-						return playerList[selectedIndex];
-					}
-					else
-						std::cerr << "Invalid index for character selection" << std::endl;
-				}
-			}
-			//No Characters Found
-			else {
-				//Init Player Vars
-				std::string playerName;
-				Weapon::WeaponType weaponType;
-
-				system("cls");
-				std::cout << "No character files are found, create a character!" << std::endl
-					<< "What's your characters name?" << std::endl;
-				std::cin >> playerName;
-				std::cout << "What type of weapon do you wish to start out with?" << std::endl <<
-					std::endl << "1.) Assault Rifle\n" << "2.) Sniper\n" << "3.) Pistol\n" << "4.) Melee\n" << "5.) SMG" << std::endl;
-				int weaponIndex;
-				if (std::cin >> weaponIndex) {
-					if (weaponIndex > 0 && weaponIndex <= 5) {
-						weaponType = static_cast<Weapon::WeaponType>(weaponIndex - 1);
+					if (selectedIndex < 0 || playerList.size() >= selectedIndex) {
+						if (selectedIndex != playerList.size())
+							return playerList[selectedIndex];
+						else
+							return createCharacterHelper();
 					}
 					else {
-						std::cerr << "Invalid weapon type selected, try again" << std::endl;
+						std::cerr << "Invalid index for character selection" << std::endl;
 						system("pause");
 					}
 				}
-
-				//Create Player Object
-				Player newPlayer(playerName, 100, 0, 0, 8, 0, 0);
-
-				//Create Weapon Object
-				Weapon starterWeapon = Weapon::createWeapon(newPlayer, weaponType, false);
-
-				//Equip Primary Weapon
-				newPlayer.equipPrimaryWeapon(&starterWeapon);
-				
-				//Save Player Data
-				GameFunctions::savePlayerData(&newPlayer);
-
-				//Create and Return new player object
-				std::cout << "New player " << newPlayer.getPlayerName() << " successfully created!\n"
-					<< newPlayer << "\n" << *newPlayer.getPrimaryWeapon() << std::endl;
-				return newPlayer;
-
 			}
+			//No Characters Found
+			else 
+				return createCharacterHelper();
 
 
 		}
@@ -87,6 +109,27 @@ namespace GameFunctions {
 		return playerList[0];
 		
 	}
+
+	bool GameFunctions::gameLoop(Player* selectedPlayer) {
+		while (true) {
+			system("cls");
+			colorPrint("%s\n", GameFunctions::DEFAULT_COLOR, selectedPlayer->toString().c_str());
+			std::cout << "What's the move boss?" << std::endl;
+			colorPrint("1. Manage Inventory ", FOREGROUND_BLUE);
+			int selectedIndex = 0;
+			if (std::cin >> selectedIndex && selectedIndex < 0 && selectedIndex < 4) {
+				switch (selectedIndex) {
+				case 1: selectedPlayer->managePlayerInventory();
+					break;
+				default:
+					break;
+				}
+			}
+			system("pause");
+		}
+
+	}
+
 
 
 	int GameFunctions::rngInt(int min, int max) {
@@ -284,6 +327,35 @@ namespace GameFunctions {
 		return players;
 	}
 
+
+
+
+	std::string GameFunctions::colorPrint(const char* format,int color, ...) {
+		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+		SetConsoleTextAttribute(hConsole, color);
+
+		va_list args;
+		va_start(args, format);
+
+		// Determine the size of the formatted string
+		int size = vsnprintf(nullptr, 0, format, args);
+
+		// Allocate a buffer for the formatted string
+		char* buffer = new char[size + 1];
+
+		va_start(args, format);
+		vsnprintf(buffer, size + 1, format, args);
+		va_end(args);
+
+		std::string result(buffer);
+		delete[] buffer;
+
+		std::cout << result << std::endl;
+
+		SetConsoleTextAttribute(hConsole, 7);
+
+		return result;
+	}
 
 
 

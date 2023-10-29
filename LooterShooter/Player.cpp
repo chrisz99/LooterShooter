@@ -1,5 +1,13 @@
 #include "Player.h"
+#include <iostream>
+#include <string>
 #include "Weapon.h"
+#include "GameFunctions.h"
+#include <iostream>
+#include <Windows.h>
+
+
+class Weapon;
 
 //Constructor
 Player::Player(std::string name, double health, double exp, int level, int inventory_space, double dps, double armour) {
@@ -44,10 +52,17 @@ this->primaryWeapon = primaryWeapon;
 refreshPlayerEquipment();
 }
 
+
+void Player::managePlayerInventory() {
+	system("cls");
+	GameFunctions::colorPrint("Player %s Inventory:", FOREGROUND_BLUE, name);
+}
+
 //Refreshs Player Stats After Equipping Equipment
 void Player::refreshPlayerEquipment() {
 	this->dps = this->getPrimaryWeapon()->getWeaponDamage() * this->getPrimaryWeapon()->getAttackRate();
 }
+
 
 
 //Getters and Setters
@@ -107,5 +122,33 @@ double Player::getPlayerArmour(){
 void Player::setPlayerArmour(double armour){
 	this->armour = armour;
 	}
+
+
+Player::Inventory* Player::getPlayerInventory() {
+	return &playerInventory;
+
+}
+void Player::setPlayerInventory(Inventory* inventory) {
+	this->playerInventory = *inventory;
+}
+
+int Player::getNumOfItemsInInventory() {
+	int numItems = 0;
+
+	for (const Weapon w : playerInventory.weaponInventory) 
+		numItems += 1;
+
+	return numItems;
+	
+}
+
+
+std::string Player::toString() {
+	return "Name: " + this->name + " Health: " + std::to_string(this->health) + " Exp: " + std::to_string(this->exp) + 
+		" DPS: " + std::to_string(this->dps) + " Armour: " + std::to_string(this->armour) + " Inventory: " 
+		+ std::to_string(getNumOfItemsInInventory()) + "/" + std::to_string(playerInventory.weaponInventory.size());
+}
+
+
 
 
