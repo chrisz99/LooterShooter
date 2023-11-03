@@ -13,7 +13,7 @@ Weapon::Weapon() {}
 
 //Override for << Operator
  std::ostream& operator<<(std::ostream& os, const Weapon& obj) {
-	 os << "Name: " << obj.name << " | " << "Weapon Type: " << GameFunctions::weaponTypeToString(obj.weaponType) << " | "
+	 os << "Name: " << obj.name << " | " << "Weapon Type: " << Weapon::weaponTypeToString(obj.weaponType) << " | "
 		 << "Damage: " << obj.damage << " | " << "Level Req: " << obj.level_req << " | "
 		 << "Attack-Rate: " << obj.attackRate << " | " << "Accuracy: " << obj.accuracy << std::endl;
 	 return os;
@@ -96,28 +96,85 @@ Weapon Weapon::createWeapon(Player player, WeaponType weaponType, bool levelRequ
 
 }
 
+std::string Weapon::weaponTypeToString(Weapon::WeaponType weaponType) {
+	switch (weaponType) {
+	case Weapon::WeaponType::AssaultRifle:
+		return "Assault Rifle";
+	case Weapon::WeaponType::Melee:
+		return "Melee";
+	case Weapon::WeaponType::Pistol:
+		return "Pistol";
+	case Weapon::WeaponType::SMG:
+		return "SMG";
+	case Weapon::WeaponType::Sniper:
+		return "Sniper";
+	default:
+		return "Assault Rifle";
+	}
+}
+
+
+
+//To String
+std::string Weapon::toString() {
+	return "Name: " + name + " WeaponType: " + weaponTypeToString(weaponType) + " Damage: " + std::to_string(damage) + " Level Req: " + std::to_string(level_req) + " Attack Rate: " +
+		std::to_string(attackRate) + " Accuracy: " + std::to_string(accuracy);
+
+}
+
+bool Weapon::compareWeapons(Weapon* weapon, Weapon* weaponCompare) {
+
+	if (weapon->name != weaponCompare->name)
+		return false;
+	if (weapon->weaponType != weaponCompare->weaponType)
+		return false;
+	if (weapon->damage != weaponCompare->damage)
+		return false;
+	if (weapon->level_req != weaponCompare->level_req)
+		return false;
+	if (weapon->attackRate != weaponCompare->attackRate)
+		return false;
+	if (weapon->accuracy != weaponCompare->accuracy)
+		return false;
+
+	return true;
+}
+
+
 //Getters and Setters
 
 double Weapon::getWeaponDamage() {
-	return damage;
+	if (this != nullptr)
+		return damage;
+	else
+		return 0;
 } 
 void Weapon::setWeaponDamage(double damage){
 	this->damage = damage;
 	}
 std::string Weapon::getWeaponName(){
+	if (this != nullptr)
 	return name;
+	else
+		return "";
 	}
 void Weapon::setWeaponName(std::string name){
 	this->name = name;
 	}
 int Weapon::getWeaponAccuracy(){
-	return accuracy;
+if (this != nullptr)	
+return accuracy;
+else
+return 0;
 	}
 void Weapon::setWeaponAccuracy(int accuracy){
 	this->accuracy = accuracy;
 	}
 double Weapon::getAttackRate() {
-	return attackRate;
+if (this != nullptr)	
+return attackRate;
+else
+return 0;
 }
 
 void Weapon::setAttackRate(double attackRate){
@@ -125,14 +182,20 @@ void Weapon::setAttackRate(double attackRate){
 	}
 
 int Weapon::getWeaponLevelReq() {
-	return this->level_req;
+if (this != nullptr)	
+return this->level_req;
+else
+return 0;
 }
 void Weapon::setWeaponLevelReq(int levelreq){
 	this->level_req = levelreq;
 	}
 
 Weapon::WeaponType Weapon::getWeaponType(){
-	return this->weaponType;
+	if (this != nullptr)
+		return this->weaponType;
+	else
+		return WeaponType::AssaultRifle;
 	}
 void Weapon::setWeaponType(WeaponType weaponType){
 	this->weaponType = weaponType;

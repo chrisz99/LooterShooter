@@ -9,10 +9,28 @@
 #include <iomanip>
 #include <string>
 #include "GameFunctions.h"
+#include "Weapon.h"
 
 
 namespace GameFunctions {
 
+	void invalidCommand(std::string errorText = "Invalid Command!", bool clearConsole = false) {
+
+		if (clearConsole)
+			system("cls");
+
+		if (errorText == "Invalid Command!") {
+			GameFunctions::colorPrint("Invalid Command!", FOREGROUND_RED);
+			system("pause");
+			std::cin.clear();
+		}
+		else {
+			GameFunctions::colorPrint(errorText.c_str(), FOREGROUND_RED);
+			system("pause");
+			std::cin.clear();
+
+		}
+	}
 
 
 	Player GameFunctions::createCharacterHelper() {
@@ -24,7 +42,6 @@ namespace GameFunctions {
 		while (creatingCharacter) {
 			system("cls");
 			std::cout << "What's your characters name?" << std::endl;
-			std::cin.ignore(); 
 			std::getline(std::cin, playerName);
 			std::cout << "What type of weapon do you wish to start out with?" << std::endl <<
 				std::endl << "1.) Assault Rifle\n" << "2.) Sniper\n" << "3.) Pistol\n" << "4.) Melee\n" << "5.) SMG" << std::endl;
@@ -50,24 +67,29 @@ namespace GameFunctions {
 		Weapon starterWeapon = Weapon::createWeapon(newPlayer, weaponType, false);
 
 		//Equip Primary Weapon
-		newPlayer.equipPrimaryWeapon(&starterWeapon);
+		newPlayer.equipPrimaryWeapon(starterWeapon);
+
+		newPlayer.refreshPlayerEquipment();
+
+		newPlayer.refreshPlayerInventory();
 
 		//Save Player Data
 		GameFunctions::savePlayerData(&newPlayer);
 
 		//Create and Return new player object
 		std::cout << "New player " << newPlayer.getPlayerName() << " successfully created!\n"
-			<< newPlayer << "\n" << *newPlayer.getPrimaryWeapon() << std::endl;
+			<< newPlayer << "\n" << newPlayer.getPrimaryWeapon() << std::endl;
 		return newPlayer;
 
 	
 	}
 
+	
+
 
 	Player GameFunctions::gameStart() {
 
-		//init player list
-		std::vector<Player> playerList = loadPlayers();
+		std::vector<Player> playerList;
 		bool characterSelected = false;
 
 		std::cout << "Welcome to the wasteland, Press any key to select or create a character." << std::endl;
@@ -77,25 +99,52 @@ namespace GameFunctions {
 		//Check if there is players available
 		while (!characterSelected) {
 
+			//init player list
+			 playerList = loadPlayers();
+
 			//If Characters are found -> select one
 			if (!playerList.empty()) {
 				system("cls");
-				std::cout << "Select a Character Survivor!" << std::endl << std::endl;
+				std::cout << "Select a Character Survivor! Commands { DELETE 'INDEX' }" << std::endl << std::endl;
 				for (int i = 0; i < playerList.size(); i++)
 					std::cout << i << ".) " << playerList[i] << std::endl << std::endl;
 				std::cout << playerList.size() << ".)" << " Create a character." << std::endl;
-				int selectedIndex;
-				if (std::cin >> selectedIndex) {
-					if (selectedIndex < 0 || playerList.size() >= selectedIndex) {
-						if (selectedIndex != playerList.size())
-							return playerList[selectedIndex];
+				std::string initialCommand;
+				if (std::getline(std::cin, initialCommand) && !initialCommand.empty()) {
+					std::istringstream iss(initialCommand);
+					std::string command;
+					int index;
+
+
+					if (iss >> command && !command.empty()) {
+						std::transform(command.begin(), command.end(), command.begin(), ::toupper);
+
+						if (command == "DELETE") {
+							if (iss >> index && index < playerList.size() && index >= 0) {
+								system("cls");
+								colorPrint("Player:\n%s\nSuccessfully Deleted!", FOREGROUND_GREEN, playerList[index].toString().c_str());
+								deletePlayerData(&playerList[index]);
+								system("pause");
+							}
+							else
+								invalidCommand("Invalid Index Specified!", true);
+						}
 						else
-							return createCharacterHelper();
+						{
+							
+							if (std::stoi(command) < playerList.size() && std::stoi(command) >= 0) {
+								return playerList[std::stoi(command)];
+							}
+							else if (std::stoi(command) == playerList.size())
+								return createCharacterHelper();
+							else
+								invalidCommand();
+							
+						}
+					
 					}
-					else {
-						std::cerr << "Invalid index for character selection" << std::endl;
-						system("pause");
-					}
+				
+
 				}
 			}
 			//No Characters Found
@@ -110,23 +159,48 @@ namespace GameFunctions {
 		
 	}
 
+	void debugSpawnWeapon(Player* player) {
+		Weapon w = Weapon::createWeapon(*player, Weapon::WeaponType::AssaultRifle, false);
+		bool added = player->addItem(&w);
+		if (added) {
+			colorPrint("Weapon\n%s\nAdded to player Inventory!", FOREGROUND_GREEN, w.toString().c_str());
+			system("pause");
+		}
+	}
+
+	
+
 	bool GameFunctions::gameLoop(Player* selectedPlayer) {
-		while (true) {
+		bool playerPlaying = true;
+
+		while (playerPlaying) {
 			system("cls");
 			colorPrint("%s\n", GameFunctions::DEFAULT_COLOR, selectedPlayer->toString().c_str());
-			std::cout << "What's the move boss?" << std::endl;
-			colorPrint("1. Manage Inventory ", FOREGROUND_BLUE);
+			colorPrint("What's the move boss?", FOREGROUND_BLUE);
+			colorPrint("1. Manage Inventory\n2. Debug Spawn Weapon\n3. Log Out", FOREGROUND_GREEN);
 			int selectedIndex = 0;
-			if (std::cin >> selectedIndex && selectedIndex < 0 && selectedIndex < 4) {
+			if (std::cin >> selectedIndex && selectedIndex > 0 && selectedIndex < 4) {
 				switch (selectedIndex) {
 				case 1: selectedPlayer->managePlayerInventory();
 					break;
-				default:
+				case 2: 
+					debugSpawnWeapon(selectedPlayer);
+					break;
+				case 3: {
+					playerPlaying = false;
+					system("cls");
 					break;
 				}
+					
+				}
 			}
-			system("pause");
+			else
+			{
+				colorPrint("Invalid option!", FOREGROUND_RED);
+			}
 		}
+
+		return playerPlaying;
 
 	}
 
@@ -166,22 +240,6 @@ namespace GameFunctions {
 		return scaledDamage;
 	}
 
-	std::string GameFunctions::weaponTypeToString(Weapon::WeaponType weaponType) {
-		switch (weaponType) {
-		case Weapon::WeaponType::AssaultRifle: 
-			return "Assault Rifle";
-		case Weapon::WeaponType::Melee:
-			return "Melee";
-		case Weapon::WeaponType::Pistol:
-			return "Pistol";
-		case Weapon::WeaponType::SMG:
-			return "SMG";
-		case Weapon::WeaponType::Sniper:
-			return "Sniper";
-		default:
-			return "Assault Rifle";
-		}
-	}
 
 	//Helper JSON Functs
 
@@ -189,6 +247,8 @@ namespace GameFunctions {
 	nlohmann::json GameFunctions::playerToJson(Player* player) {
 		//Create and populate the player JSON object
 		nlohmann::json playerJson;
+		nlohmann::json primaryWeapon = weaponToJson(&player->getPrimaryWeapon());
+		nlohmann::json playerInventory = inventoryToJson(player);
 
 		playerJson = nlohmann::json{
 			{"name", player->getPlayerName()},
@@ -198,6 +258,8 @@ namespace GameFunctions {
 			{"inventory_space", player->getPlayerInventorySpace()},
 			{"dps", player->getPlayerDPS()},
 			{"armour", player->getPlayerArmour()},
+			{"primary_weapon", primaryWeapon},
+			{"inventory", playerInventory}
 		};
 
 		return playerJson;
@@ -208,6 +270,7 @@ namespace GameFunctions {
 	nlohmann::json GameFunctions::weaponToJson(Weapon* weapon){
 		//Creates and Populates JSON with Weapon Data
 		nlohmann::json weaponJson;
+
 
 		weaponJson = nlohmann::json{
 			{"name", weapon->getWeaponName()},
@@ -221,6 +284,19 @@ namespace GameFunctions {
 		return weaponJson;
 
 		}
+
+	nlohmann::json GameFunctions::inventoryToJson(Player* player) {
+		nlohmann::json inventoryJson;
+
+		if (player->getPlayerInventory()->weaponInventory.empty())
+			return inventoryJson;
+
+		for (auto& weapon : player->getPlayerInventory()->weaponInventory) {
+			inventoryJson["weapons"].push_back(weaponToJson(&weapon));
+		}
+
+		return inventoryJson;
+	}
 
 	//Helper Function to Grab Documents Path
 	std::wstring getDocumentsPath() {
@@ -239,8 +315,52 @@ namespace GameFunctions {
 		return documentsPath;
 	}
 
+	void GameFunctions::deletePlayerData(Player* player) {
+
+		bool playerFound = false;
+
+		std::wstring documentsPath = getDocumentsPath();
+
+		//Define File Paths
+		std::wstring gameFolderPath = documentsPath + L"\\LooterShooter1_0";
+		std::wstring playerFilePath = gameFolderPath + L"\\game_data.json";
+
+		//Grab Previous Saves
+		nlohmann::json prevSave = nlohmann::json::array();
+
+		//Open Player File
+		std::ifstream playerFileIn(playerFilePath);
+
+		//Dump contents in Prev Save
+		if (playerFileIn.is_open()) {
+			playerFileIn >> prevSave;
+
+		}
+
+		//Iterate prev save, try and find existing player
+		for (auto it = prevSave.begin(); it != prevSave.end(); ++it) {
+			if ((*it)["name"] == player->getPlayerName()) {
+				playerFound = true;
+				prevSave.erase(it);
+				break;
+			}
+		}
+
+		if (playerFound) {
+			// Open the file for writing
+			std::ofstream playerFileOut(playerFilePath);
+			if (playerFileOut.is_open()) {
+				// Write the modified JSON back to the file
+				playerFileOut << prevSave.dump(4); // You can format the output as needed
+			}
+		}
+
+	}
+
 	//Save Player Data 
 	bool GameFunctions::savePlayerData(Player* player) {
+
+		bool playerFound = false;
 
 		std::wstring documentsPath = getDocumentsPath();
 		
@@ -254,26 +374,31 @@ namespace GameFunctions {
 			return false;
 		}
 
-
-
-		//Create and Populate JSON objects
+		//Convert Player Object to JSON
 		nlohmann::json playerJson = playerToJson(player);
-		nlohmann::json weaponJson = weaponToJson(player->getPrimaryWeapon());
 
 		//Grab Previous Saves
 		nlohmann::json prevSave = nlohmann::json::array();
 
+		//Open Player File
 		std::ifstream playerFileIn(playerFilePath);
 
+		//Dump contents in Prev Save
 		if (playerFileIn.is_open()) {
 			playerFileIn >> prevSave;
 
 		}
 
-		//Add Primary Weapon to player JSON
-		playerJson["primary_weapon"] = weaponJson;
-
-
+		//Iterate prev save, try and find existing player
+		for (auto& p : prevSave) {
+			if (player->getPlayerName() == p["name"]) {
+				p = playerJson;
+				playerFound = true;
+			 }
+		}
+		
+		//If not found, add player
+		if(!playerFound)
 		prevSave.push_back(playerJson);
 
 		//Write contents of Player JSON with included Weapon JSON for primary Weapon
@@ -293,6 +418,17 @@ namespace GameFunctions {
 
 	}
 
+	Player::Inventory GameFunctions::jsonToInventory(nlohmann::json inventoryJson) {
+		Player::Inventory loadedInventory;
+		for (const auto& weapon : inventoryJson["weapons"]) {
+	
+			Weapon loadedWeapon(weapon["name"], weapon["weaponType"], weapon["damage"], weapon["level_req"], weapon["attack_rate"], weapon["accuracy"]);
+			loadedInventory.weaponInventory.push_back(loadedWeapon);
+		}
+		return loadedInventory;
+	}
+
+
 	//Returns a list of players
 	std::vector<Player> GameFunctions::loadPlayers() {
 		std::wstring documentsPath = getDocumentsPath();
@@ -305,20 +441,34 @@ namespace GameFunctions {
 			return players;
 		}
 
-		nlohmann::json playerArray;
-		playerFile >> playerArray;
-		playerFile.close();
 
+
+		nlohmann::json playerArray;
+	
+		try {
+			playerFile >> playerArray;
+		}
+		catch (const nlohmann::json::exception& e) {
+			playerFile.close();
+			return players;
+		}
+	
 
 		for (const auto& playerJson : playerArray) {
 			nlohmann::json primaryWeaponJson = playerJson["primary_weapon"];
+			Player::Inventory playerInventory = jsonToInventory(playerJson["inventory"]);
+	
 
-			Weapon* primaryWeapon = new Weapon(primaryWeaponJson["name"], primaryWeaponJson["weaponType"], primaryWeaponJson["damage"],
+			Weapon primaryWeapon = Weapon(primaryWeaponJson["name"], primaryWeaponJson["weaponType"], primaryWeaponJson["damage"],
 				primaryWeaponJson["level_req"], primaryWeaponJson["attack_rate"], primaryWeaponJson["accuracy"]);
 
 
 			Player player(playerJson["name"], playerJson["health"], playerJson["exp"], playerJson["level"], playerJson["inventory_space"],
-				playerJson["dps"], playerJson["armour"], primaryWeapon);
+				playerJson["dps"], playerJson["armour"], primaryWeapon, playerInventory);
+			
+			player.refreshPlayerEquipment();
+			
+			player.refreshPlayerInventory();
 
 			players.push_back(player);
 		}

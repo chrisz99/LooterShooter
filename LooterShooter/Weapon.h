@@ -1,8 +1,9 @@
 #pragma once
 #include <string>
-#include "Player.h"
 #include <map>
 #include <vector>
+
+class Player;
 
 class Weapon {
 public:
@@ -44,6 +45,15 @@ public:
 
 	//Create a Weapon
 	static Weapon createWeapon(Player player, WeaponType weaponType, bool levelRequireRNG);
+
+	//Compare Two Weapon Object -> Returns true if values are ==
+	static bool compareWeapons(Weapon* weapon, Weapon* weaponCompare);
+
+	//Utility Functions
+	static std::string weaponTypeToString(Weapon::WeaponType weaponType);
+
+	//To String
+	std::string toString();
 
 	//Getters and Setters
 	double getWeaponDamage();

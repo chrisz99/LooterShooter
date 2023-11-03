@@ -30,15 +30,18 @@ namespace GameFunctions {
 	//Damage Scaling Functions
 	double scaleDamage(double baseDamage, int level);
 
-	//Utility Functions
-	std::string weaponTypeToString(Weapon::WeaponType weaponType);
+
 
 	//Login / Save | Load Data
 	bool savePlayerData(Player* player);
 
+	void deletePlayerData(Player* player);
+
 	//JSON Methods
 	nlohmann::json playerToJson(Player* player);
 	nlohmann::json weaponToJson(Weapon* weapon);
+	nlohmann::json inventoryToJson(Player* player);
+	Player::Inventory jsonToInventory(nlohmann::json inventoryJson);
 	std::vector<Player> loadPlayers();
 
 
