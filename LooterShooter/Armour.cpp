@@ -42,6 +42,35 @@ Armour::Armour(std::string name, int protectionStat, int level_Req, ArmourType a
 	this->baseArmourHealth = baseArmourHealth;
 }
 
+
+//Check if empty
+bool Armour::isEmpty() {
+	if (name.empty() || name == "")
+		return true;
+
+	return false;
+}
+
+
+//Compare two Armours returns true if matching
+ bool Armour::compareArmours(Armour* base, Armour* comp) {
+	if (base->getArmourName() != comp->getArmourName())
+		return false;
+	if (base->getArmourHealth() != comp->getArmourHealth())
+		return false;
+	if (base->getArmourLevelReq() != comp->getArmourLevelReq())
+		return false;
+	if (base->getArmourProtectionStat() != comp->getArmourProtectionStat())
+		return false;
+	if (base->getArmourType() != comp->getArmourType())
+		return false;
+	if (base->getBaseArmourHealth() != comp->getBaseArmourHealth())
+		return false;
+
+	return true;
+}
+
+
 std::string Armour::armourTypeToString(ArmourType armourType) {
 	switch (armourType) {
 	case ArmourType::BODY:

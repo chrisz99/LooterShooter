@@ -31,10 +31,14 @@ public:
 	static Armour createArmour(Player* player, bool levelRequireRng);
 
 	//Utility
-		//To String
-	std::string toString();
-		//Return Armour Type as String
-	static std::string armourTypeToString(ArmourType armourType);
+			//To String
+		std::string toString();
+			//Return Armour Type as String
+		static std::string armourTypeToString(ArmourType armourType);
+			//Check if empty
+		bool isEmpty();
+			//Compare two Armours returns true if matching
+		static bool compareArmours(Armour* base, Armour* comp);
 
 	//Setters and Getters
 

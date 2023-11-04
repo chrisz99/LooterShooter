@@ -3,7 +3,9 @@
 #include <iostream>
 #include <vector>
 #include "Weapon.h"
+#include "Armour.h"
 
+class Armour;
 class Weapon;
 
 class Player {
@@ -11,7 +13,7 @@ class Player {
 public: 
 	struct Inventory {
 		std::vector<Weapon> weaponInventory;
-
+		std::vector<Armour> armourInventory;
 	};
 
 private:
@@ -23,6 +25,7 @@ private:
 	double dps;
 	double armour;
 	Weapon primaryWeapon;
+	Armour equippedArmour;
 	Inventory playerInventory;
 
 
@@ -36,6 +39,8 @@ public:
 	//Player Constructory with Primary Weapon and Inventory
 	Player(std::string name, double health, double exp, int level, int inventory_space, double dps, double armour, Weapon primaryWeapon, Inventory playerInventory);
 
+	//Player Constructory with Primary Weapon and Inventory and Equipped Armour
+	Player(std::string name, double health, double exp, int level, int inventory_space, double dps, double armour, Weapon primaryWeapon, Inventory playerInventory, Armour equippedArmour);
 
 	//Default Constructor
 	Player();
@@ -46,6 +51,10 @@ public:
 
 	bool addItem(Weapon* weaponItem);
 
+	bool addItem(Armour* armourItem);
+
+	//Equip Armour
+	void equipArmour(Armour* armour);
 
 	//Equip Primary Weapon
 	void equipPrimaryWeapon(Weapon primaryWeapon);
@@ -68,6 +77,7 @@ public:
 	void setPlayerName(std::string name);
 
 	Weapon getPrimaryWeapon();
+	Armour getEquippedArmour();
 
 	double getPlayerHealth();
 	void setPlayerHealth(double health);

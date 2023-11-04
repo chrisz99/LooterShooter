@@ -37,6 +37,14 @@ std::vector<std::string> Weapon::smgNames = { "MP5", "TMP", "Uzi", "Vector", "UM
 	{ Weapon::WeaponType::SMG, std::make_tuple(30,55,1.6) }
 };
 
+ //Check if uninitialized or empty
+ bool Weapon::isEmpty() {
+	 if (name.empty() || name == "")
+		 return true;
+
+	 return false;
+ }
+
 Weapon Weapon::createWeapon(Player player, WeaponType weaponType, bool levelRequireRNG) {
 
 	std::string name;

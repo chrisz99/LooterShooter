@@ -41,6 +41,7 @@ namespace GameFunctions {
 	nlohmann::json playerToJson(Player* player);
 	nlohmann::json weaponToJson(Weapon* weapon);
 	nlohmann::json inventoryToJson(Player* player);
+	nlohmann::json armourToJson(Armour* armour);
 	Player::Inventory jsonToInventory(nlohmann::json inventoryJson);
 	std::vector<Player> loadPlayers();
 

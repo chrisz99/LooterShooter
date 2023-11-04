@@ -10,6 +10,7 @@
 #include <string>
 #include "GameFunctions.h"
 #include "Weapon.h"
+#include "Armour.h"
 
 
 namespace GameFunctions {
@@ -168,6 +169,15 @@ namespace GameFunctions {
 		}
 	}
 
+	void debugSpawnArmour(Player* player) {
+		Armour a = Armour::createArmour(player, false);
+		bool added = player->addItem(&a);
+		if (added) {
+			colorPrint("Weapon\n%s\nAdded to player Inventory!", FOREGROUND_GREEN, a.toString().c_str());
+			system("pause");
+		}
+	}
+
 	
 
 	bool GameFunctions::gameLoop(Player* selectedPlayer) {
@@ -177,9 +187,9 @@ namespace GameFunctions {
 			system("cls");
 			colorPrint("%s\n", GameFunctions::DEFAULT_COLOR, selectedPlayer->toString().c_str());
 			colorPrint("What's the move boss?", FOREGROUND_BLUE);
-			colorPrint("1. Manage Inventory\n2. Debug Spawn Weapon\n3. Log Out", FOREGROUND_GREEN);
+			colorPrint("1. Manage Inventory\n2. Debug Spawn Weapon\n3. Debug Spawn Armour\n4. Logout", FOREGROUND_GREEN);
 			int selectedIndex = 0;
-			if (std::cin >> selectedIndex && selectedIndex > 0 && selectedIndex < 4) {
+			if (std::cin >> selectedIndex && selectedIndex > 0 && selectedIndex <= 4) {
 				switch (selectedIndex) {
 				case 1: selectedPlayer->managePlayerInventory();
 					break;
@@ -187,6 +197,10 @@ namespace GameFunctions {
 					debugSpawnWeapon(selectedPlayer);
 					break;
 				case 3: {
+					debugSpawnArmour(selectedPlayer);
+					break;
+				}
+				case 4: {
 					playerPlaying = false;
 					system("cls");
 					break;
@@ -243,12 +257,27 @@ namespace GameFunctions {
 
 	//Helper JSON Functs
 
+		//Armour to JSON
+	nlohmann::json GameFunctions::armourToJson(Armour * armour) {
+		nlohmann::json armourJson{
+			{"name", armour->getArmourName()},
+			{"protection_stat", armour->getArmourProtectionStat()},
+			{"level_req", armour->getArmourLevelReq()},
+			{"armour_type", armour->getArmourType()},
+			{"armour_health", armour->getArmourHealth()},
+			{"armour_base_health", armour->getBaseArmourHealth()}
+		};
+
+		return armourJson;
+	}
+
 	//Player to JSON
 	nlohmann::json GameFunctions::playerToJson(Player* player) {
 		//Create and populate the player JSON object
 		nlohmann::json playerJson;
 		nlohmann::json primaryWeapon = weaponToJson(&player->getPrimaryWeapon());
 		nlohmann::json playerInventory = inventoryToJson(player);
+		nlohmann::json armourJson = armourToJson(&player->getEquippedArmour());
 
 		playerJson = nlohmann::json{
 			{"name", player->getPlayerName()},
@@ -258,6 +287,7 @@ namespace GameFunctions {
 			{"inventory_space", player->getPlayerInventorySpace()},
 			{"dps", player->getPlayerDPS()},
 			{"armour", player->getPlayerArmour()},
+			{"equipped_armour", armourJson},
 			{"primary_weapon", primaryWeapon},
 			{"inventory", playerInventory}
 		};
@@ -265,6 +295,7 @@ namespace GameFunctions {
 		return playerJson;
 
 	}
+
 
 	//Weapon to JSON
 	nlohmann::json GameFunctions::weaponToJson(Weapon* weapon){
@@ -288,12 +319,18 @@ namespace GameFunctions {
 	nlohmann::json GameFunctions::inventoryToJson(Player* player) {
 		nlohmann::json inventoryJson;
 
-		if (player->getPlayerInventory()->weaponInventory.empty())
+		if (player->getPlayerInventory()->weaponInventory.empty() && player->getPlayerInventory()->armourInventory.empty())
 			return inventoryJson;
 
+		if (!player->getPlayerInventory()->weaponInventory.empty())
 		for (auto& weapon : player->getPlayerInventory()->weaponInventory) {
 			inventoryJson["weapons"].push_back(weaponToJson(&weapon));
 		}
+
+		if (!player->getPlayerInventory()->armourInventory.empty())
+			for (auto& armour : player->getPlayerInventory()->armourInventory) {
+				inventoryJson["armours"].push_back(armourToJson(&armour));
+			}
 
 		return inventoryJson;
 	}
@@ -420,10 +457,18 @@ namespace GameFunctions {
 
 	Player::Inventory GameFunctions::jsonToInventory(nlohmann::json inventoryJson) {
 		Player::Inventory loadedInventory;
+
 		for (const auto& weapon : inventoryJson["weapons"]) {
 	
 			Weapon loadedWeapon(weapon["name"], weapon["weaponType"], weapon["damage"], weapon["level_req"], weapon["attack_rate"], weapon["accuracy"]);
 			loadedInventory.weaponInventory.push_back(loadedWeapon);
+		}
+
+		if (inventoryJson.contains("armours"))
+		for (const auto& a : inventoryJson["armours"]) {
+			Armour armour(a["name"], a["protection_stat"], a["level_req"], a["armour_type"],
+				a["armour_health"], a["armour_base_health"]);
+			loadedInventory.armourInventory.push_back(armour);
 		}
 		return loadedInventory;
 	}
@@ -457,14 +502,23 @@ namespace GameFunctions {
 		for (const auto& playerJson : playerArray) {
 			nlohmann::json primaryWeaponJson = playerJson["primary_weapon"];
 			Player::Inventory playerInventory = jsonToInventory(playerJson["inventory"]);
-	
+			nlohmann::json equippedArmourJson;
+			if (playerJson.contains("equipped_armour"))
+				equippedArmourJson = playerJson["equipped_armour"];
+			Weapon primaryWeapon;
+			Armour equippedArmour;
 
-			Weapon primaryWeapon = Weapon(primaryWeaponJson["name"], primaryWeaponJson["weaponType"], primaryWeaponJson["damage"],
+			if (!primaryWeaponJson.empty())
+			 primaryWeapon = Weapon(primaryWeaponJson["name"], primaryWeaponJson["weaponType"], primaryWeaponJson["damage"],
 				primaryWeaponJson["level_req"], primaryWeaponJson["attack_rate"], primaryWeaponJson["accuracy"]);
+
+			if (!equippedArmourJson.empty())
+				equippedArmour = Armour(equippedArmourJson["name"], equippedArmourJson["protection_stat"], equippedArmourJson["level_req"], equippedArmourJson["armour_type"],
+					equippedArmourJson["armour_health"], equippedArmourJson["armour_base_health"]);
 
 
 			Player player(playerJson["name"], playerJson["health"], playerJson["exp"], playerJson["level"], playerJson["inventory_space"],
-				playerJson["dps"], playerJson["armour"], primaryWeapon, playerInventory);
+				playerJson["dps"], playerJson["armour"], primaryWeapon, playerInventory, equippedArmour);
 			
 			player.refreshPlayerEquipment();
 			

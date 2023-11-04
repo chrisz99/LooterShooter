@@ -39,7 +39,6 @@ public:
 	//Constructor
 	Weapon(std::string name, WeaponType weaponType, double damage, int level_req, double attackRate, int accuracy);
 
-
 	//Default Constructor
 	Weapon();
 
@@ -50,10 +49,14 @@ public:
 	static bool compareWeapons(Weapon* weapon, Weapon* weaponCompare);
 
 	//Utility Functions
-	static std::string weaponTypeToString(Weapon::WeaponType weaponType);
+		//Weapon Type to String
+		static std::string weaponTypeToString(Weapon::WeaponType weaponType);
 
-	//To String
-	std::string toString();
+		//To String
+		std::string toString();
+
+		//Check if uninitialized or empty
+		bool isEmpty();
 
 	//Getters and Setters
 	double getWeaponDamage();

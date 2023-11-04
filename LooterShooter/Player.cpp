@@ -6,7 +6,7 @@
 #include <iostream>
 #include <Windows.h>
 #include <sstream>
-
+#include <algorithm>
 
 class Weapon;
 
@@ -49,6 +49,21 @@ Player::Player(std::string name, double health, double exp, int level, int inven
 	this->playerInventory = playerInventory;
 }
 
+
+//Player Constructory with Primary Weapon and Inventory and Equipped Armour
+Player::Player(std::string name, double health, double exp, int level, int inventory_space, double dps, double armour, Weapon primaryWeapon, Inventory playerInventory, Armour equippedArmour) {
+	this->name = name;
+	this->health = health;
+	this->exp = exp;
+	this->level = level;
+	this->inventory_space = inventory_space;
+	this->dps = dps;
+	this->armour = armour;
+	this->primaryWeapon = primaryWeapon;
+	this->playerInventory = playerInventory;
+	this->equippedArmour = equippedArmour;
+}
+
 //Default Constructor
 Player::Player() {}
 
@@ -67,6 +82,10 @@ this->primaryWeapon = primaryWeapon;
 refreshPlayerEquipment();
 }
 
+void Player::equipArmour(Armour* armour) {
+	this->equippedArmour = *armour;
+	refreshPlayerEquipment();
+}
 
 
 
@@ -96,9 +115,23 @@ bool Player::addItem(Weapon* weaponItem) {
 	}
 }
 
+bool Player::addItem(Armour* armourItem) {
+	if (playerInventory.weaponInventory.size() < inventory_space) {
+		playerInventory.armourInventory.push_back(*armourItem);
+		return true;
+	}
+	else {
+		invalidCommand("Not enough space in player inventory!");
+		return false;
+	}
+}
+
+
+
 //Refresh Player Inventory so that Equipped Items are Added to Inv
 void Player::refreshPlayerInventory() {
 	bool primaryWeaponFound = false;
+	bool armourFound = false;
 
 
 		//Look for Primary Weapon in Inventory
@@ -107,13 +140,23 @@ void Player::refreshPlayerInventory() {
 				primaryWeaponFound = true;
 		}
 
+		//Look for Equipped Armour In Inventory
+		for (int i = 0; i < playerInventory.armourInventory.size(); i++) {
+			if (Armour::compareArmours(&playerInventory.armourInventory[i], &equippedArmour))
+				armourFound = true;
+		}
+
 		//If not found add it to player inventory
 		if (!primaryWeaponFound && !primaryWeapon.getWeaponName().empty())
 			playerInventory.weaponInventory.push_back(primaryWeapon);
+
+		if (!armourFound && !equippedArmour.isEmpty())
+			playerInventory.armourInventory.push_back(equippedArmour);
 	
 }
 
 void Player::displayInventory() {
+	int index = 0;
 	GameFunctions::colorPrint("Player %s Inventory:\n", FOREGROUND_BLUE, name.c_str());
 	std::cout << "Weapons:\n" << std::endl;
 	for (int i = 0; i < playerInventory.weaponInventory.size(); i++) {
@@ -121,8 +164,18 @@ void Player::displayInventory() {
 		std::cout << i + 1 << ".)" << " *EQUIPPED* " << playerInventory.weaponInventory[i] << std::endl;
 		else
 			std::cout << i + 1 << ".) " << playerInventory.weaponInventory[i] << std::endl;
-
+		index = i + 1;
 	}
+	std::cout << "Armour:\n" << std::endl;
+	index += 1;
+	for (int i = 0; i < playerInventory.armourInventory.size(); i++) {
+		if (Armour::compareArmours(&equippedArmour, &playerInventory.armourInventory[i]))
+			std::cout << index  << ".)" << " *EQUIPPED* " << playerInventory.armourInventory[i].toString() << std::endl << std::endl;
+		else
+			std::cout << index  << ".) " << playerInventory.armourInventory[i].toString() << std::endl << std::endl;
+		index += 1;
+	}
+
 }
 
 
@@ -147,7 +200,7 @@ void Player::managePlayerInventory() {
 					managingInventory = false;
 				else {
 					//Extract Index if Provided
-					if (iss >> index && index > 0 && index <= playerInventory.weaponInventory.size()) {
+					if (iss >> index && index > 0 && index <= playerInventory.weaponInventory.size() + playerInventory.armourInventory.size()) {
 					}
 					else
 					{
@@ -157,8 +210,15 @@ void Player::managePlayerInventory() {
 
 					if (command == "EQUIP") {
 						system("cls");
-						primaryWeapon = playerInventory.weaponInventory[index - 1];
-						GameFunctions::colorPrint("Weapon:\n%s\nSuccessfully Equipped!", FOREGROUND_GREEN, playerInventory.weaponInventory[index - 1].toString().c_str());
+						if (index <= playerInventory.weaponInventory.size()) {
+							primaryWeapon = playerInventory.weaponInventory[index - 1];
+							GameFunctions::colorPrint("Weapon:\n%s\nSuccessfully Equipped!", FOREGROUND_GREEN, playerInventory.weaponInventory[index - 1].toString().c_str());
+						}
+						else {
+							int armourIndex = (index - 1) - playerInventory.weaponInventory.size();
+							equippedArmour = playerInventory.armourInventory[armourIndex];
+							GameFunctions::colorPrint("Armour:\n%s\nSuccessfully Equipped!", FOREGROUND_GREEN, playerInventory.armourInventory[armourIndex].toString().c_str());
+						}
 						system("pause");
 
 					}
@@ -211,7 +271,10 @@ void Player::managePlayerInventory() {
 
 //Refreshs Player Stats After Equipping Equipment
 void Player::refreshPlayerEquipment() {
+	if (!primaryWeapon.isEmpty())
 	this->dps = primaryWeapon.getWeaponDamage() * primaryWeapon.getAttackRate();
+	if (!equippedArmour.isEmpty())
+		this->armour = equippedArmour.getArmourProtectionStat();
 }
 
 
@@ -237,6 +300,11 @@ void Player::setPlayerLevel(int level) {
 Weapon Player::getPrimaryWeapon() {
 	return primaryWeapon;
 }
+
+Armour Player::getEquippedArmour() {
+	return equippedArmour;
+}
+
 
 
 double Player::getPlayerHealth() {
@@ -287,6 +355,9 @@ int Player::getNumOfItemsInInventory() {
 	int numItems = 0;
 
 	for (const Weapon w : playerInventory.weaponInventory) 
+		numItems += 1;
+
+	for (const Armour a : playerInventory.armourInventory)
 		numItems += 1;
 
 	return numItems;
